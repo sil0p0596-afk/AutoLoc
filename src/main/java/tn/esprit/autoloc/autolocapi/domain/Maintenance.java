@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.time.LocalDate;
 
 @Entity
@@ -22,9 +23,12 @@ public class Maintenance {
     @Column(nullable = false)
     private LocalDate dateDebut;
 
-    @Column(nullable = true)
     private LocalDate dateFin;
 
-    @Column(nullable = true, length = 255)
+    @Column(length = 255)
     private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_vehicule")
+    private Vehicule vehicule;
 }
