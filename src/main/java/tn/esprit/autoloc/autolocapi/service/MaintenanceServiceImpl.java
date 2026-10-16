@@ -1,10 +1,9 @@
 package tn.esprit.autoloc.autolocapi.service;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.autolocapi.domain.Maintenance;
+import tn.esprit.autoloc.autolocapi.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.autolocapi.repository.IMaintenanceRepository;
 
 import java.util.List;
@@ -13,43 +12,51 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MaintenanceServiceImpl implements IMaintenanceService {
 
-    private final IMaintenanceRepository repository;
+    private final IMaintenanceRepository maintenanceRepository;
 
     @Override
-    @Transactional
-    public Maintenance add(Maintenance maintenance) {
-        maintenance.setIdMaintenance(null);
-        return repository.save(maintenance);
+    public Maintenance create(Maintenance maintenance) {
+        if (maintenance.getIdMaintenance() != null) {
+            throw new IllegalArgumentException(
+                    "Un nouveau maintenance ne doit pas avoir d'identifiant");
+        }
+        valider(maintenance);
+        return maintenanceRepository.save(maintenance);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Maintenance> findAll() {
-        return repository.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Maintenance findById(Long id) {
-        return getOrThrow(id);
+        return maintenanceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Maintenance", id));
     }
 
     @Override
-    @Transactional
+    public List<Maintenance> findAll() {
+        return maintenanceRepository.findAll();
+    }
+
+    @Override
     public Maintenance update(Long id, Maintenance maintenance) {
-        getOrThrow(id);
-        maintenance.setIdMaintenance(id);
-        return repository.save(maintenance);
+        valider(maintenance);
+        Maintenance existant = findById(id);
+        existant.setDateDebut(maintenance.getDateDebut());
+        existant.setDateFin(maintenance.getDateFin());
+        existant.setDescription(maintenance.getDescription());
+        existant.setVehicule(maintenance.getVehicule());
+        return maintenanceRepository.save(existant);
     }
 
     @Override
-    @Transactional
-    public void delete(Long id) {
-        repository.delete(getOrThrow(id));
+    public void deleteById(Long id) {
+        if (!maintenanceRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Maintenance", id);
+        }
+        maintenanceRepository.deleteById(id);
     }
 
-    private Maintenance getOrThrow(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Maintenance introuvable avec l'id " + id));
+    private void valider(Maintenance maintenance) {
+        if (maintenance.getDateDebut() == null || (maintenance.getDateFin() != null && maintenance.getDateFin().isBefore(maintenance.getDateDebut()))) {
+            throw new IllegalArgumentException("La date de fin ne peut pas etre anterieure a la date de debut");
+        }
     }
 }

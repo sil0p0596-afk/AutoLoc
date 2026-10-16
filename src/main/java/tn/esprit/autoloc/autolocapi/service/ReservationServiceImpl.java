@@ -1,10 +1,9 @@
 package tn.esprit.autoloc.autolocapi.service;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.autolocapi.domain.Reservation;
+import tn.esprit.autoloc.autolocapi.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.autolocapi.repository.IReservationRepository;
 
 import java.util.List;
@@ -13,43 +12,52 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReservationServiceImpl implements IReservationService {
 
-    private final IReservationRepository repository;
+    private final IReservationRepository reservationRepository;
 
     @Override
-    @Transactional
-    public Reservation add(Reservation reservation) {
-        reservation.setIdReservation(null);
-        return repository.save(reservation);
+    public Reservation create(Reservation reservation) {
+        if (reservation.getIdReservation() != null) {
+            throw new IllegalArgumentException(
+                    "Un nouveau reservation ne doit pas avoir d'identifiant");
+        }
+        valider(reservation);
+        return reservationRepository.save(reservation);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Reservation> findAll() {
-        return repository.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Reservation findById(Long id) {
-        return getOrThrow(id);
+        return reservationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation", id));
     }
 
     @Override
-    @Transactional
+    public List<Reservation> findAll() {
+        return reservationRepository.findAll();
+    }
+
+    @Override
     public Reservation update(Long id, Reservation reservation) {
-        getOrThrow(id);
-        reservation.setIdReservation(id);
-        return repository.save(reservation);
+        valider(reservation);
+        Reservation existant = findById(id);
+        existant.setDateDebut(reservation.getDateDebut());
+        existant.setDateFin(reservation.getDateFin());
+        existant.setStatut(reservation.getStatut());
+        existant.setClient(reservation.getClient());
+        existant.setVehicule(reservation.getVehicule());
+        return reservationRepository.save(existant);
     }
 
     @Override
-    @Transactional
-    public void delete(Long id) {
-        repository.delete(getOrThrow(id));
+    public void deleteById(Long id) {
+        if (!reservationRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Reservation", id);
+        }
+        reservationRepository.deleteById(id);
     }
 
-    private Reservation getOrThrow(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Reservation introuvable avec l'id " + id));
+    private void valider(Reservation reservation) {
+        if (reservation.getDateDebut() == null || reservation.getDateFin() == null || reservation.getDateFin().isBefore(reservation.getDateDebut())) {
+            throw new IllegalArgumentException("La date de fin ne peut pas etre anterieure a la date de debut");
+        }
     }
 }

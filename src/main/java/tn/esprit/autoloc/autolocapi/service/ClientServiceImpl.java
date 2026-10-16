@@ -1,10 +1,9 @@
 package tn.esprit.autoloc.autolocapi.service;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.autolocapi.domain.Client;
+import tn.esprit.autoloc.autolocapi.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.autolocapi.repository.IClientRepository;
 
 import java.util.List;
@@ -13,48 +12,59 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ClientServiceImpl implements IClientService {
 
-    private final IClientRepository repository;
+    private final IClientRepository clientRepository;
 
     @Override
-    @Transactional
-    public Client add(Client client) {
-        client.setIdClient(null);
-        return repository.save(client);
+    public Client create(Client client) {
+        if (client.getIdClient() != null) {
+            throw new IllegalArgumentException(
+                    "Un nouveau client ne doit pas avoir d'identifiant");
+        }
+        valider(client);
+        return clientRepository.save(client);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Client> findAll() {
-        return repository.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Client findById(Long id) {
-        return getOrThrow(id);
+        return clientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", id));
     }
 
     @Override
-    @Transactional
+    public List<Client> findAll() {
+        return clientRepository.findAll();
+    }
+
+    @Override
     public Client update(Long id, Client client) {
-        Client existing = getOrThrow(id);
-        existing.setNom(client.getNom());
-        existing.setPrenom(client.getPrenom());
-        existing.setEmail(client.getEmail());
-        existing.setTelephone(client.getTelephone());
-        existing.setNumPermis(client.getNumPermis());
-        existing.setDateInscription(client.getDateInscription());
-        return repository.save(existing);
+        valider(client);
+        Client existant = findById(id);
+        existant.setNom(client.getNom());
+        existant.setPrenom(client.getPrenom());
+        existant.setEmail(client.getEmail());
+        existant.setTelephone(client.getTelephone());
+        existant.setNumPermis(client.getNumPermis());
+        existant.setDateInscription(client.getDateInscription());
+        return clientRepository.save(existant);
     }
 
     @Override
-    @Transactional
-    public void delete(Long id) {
-        repository.delete(getOrThrow(id));
+    public void deleteById(Long id) {
+        if (!clientRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Client", id);
+        }
+        clientRepository.deleteById(id);
     }
 
-    private Client getOrThrow(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Client introuvable avec l'id " + id));
+    private void valider(Client client) {
+        if (client.getNom() == null || client.getNom().isBlank()) {
+            throw new IllegalArgumentException("Nom obligatoire");
+        }
+        if (client.getPrenom() == null || client.getPrenom().isBlank()) {
+            throw new IllegalArgumentException("Prenom obligatoire");
+        }
+        if (client.getEmail() == null || client.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email obligatoire");
+        }
     }
 }
