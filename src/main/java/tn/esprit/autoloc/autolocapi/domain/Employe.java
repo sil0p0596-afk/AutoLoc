@@ -1,5 +1,6 @@
 package tn.esprit.autoloc.autolocapi.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,7 +29,9 @@ public class Employe {
     @Column(nullable = false, length = 20)
     private RoleEmploye role;
 
+    // On expose l'agence mais on ignore ses listes inverses pour éviter les boucles
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_agence")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "vehicules", "employes"})
     private Agence agence;
 }
