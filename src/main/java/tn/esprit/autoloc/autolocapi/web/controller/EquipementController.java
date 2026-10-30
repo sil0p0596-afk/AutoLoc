@@ -5,13 +5,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.autolocapi.domain.Equipement;
 import tn.esprit.autoloc.autolocapi.service.IEquipementService;
+import tn.esprit.autoloc.autolocapi.web.dto.EquipementDTO;
+import tn.esprit.autoloc.autolocapi.web.mapper.EquipementMapper;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/equipements")
@@ -20,24 +23,26 @@ import java.util.List;
 public class EquipementController {
 
     private final IEquipementService equipementService;
+    private final EquipementMapper equipementMapper;
 
-    @Operation(summary = "Créer un équipement",
-               description = "Crée un équipement. Retourne 400 si le libellé est vide.")
+    @Operation(summary = "Créer un équipement")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Équipement créé avec succès"),
-        @ApiResponse(responseCode = "400", description = "Données invalides (libellé vide)")
+        @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Equipement create(@RequestBody Equipement equipement) {
-        return equipementService.create(equipement);
+    public EquipementDTO create(@Valid @RequestBody EquipementDTO dto) {
+        return equipementMapper.toDTO(equipementService.create(equipementMapper.toEntity(dto)));
     }
 
     @Operation(summary = "Lister tous les équipements")
     @ApiResponse(responseCode = "200", description = "Liste des équipements retournée")
     @GetMapping
-    public List<Equipement> findAll() {
-        return equipementService.findAll();
+    public List<EquipementDTO> findAll() {
+        return equipementService.findAll().stream()
+                .map(equipementMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Operation(summary = "Consulter un équipement par son identifiant")
@@ -46,22 +51,22 @@ public class EquipementController {
         @ApiResponse(responseCode = "404", description = "Équipement introuvable")
     })
     @GetMapping("/{id}")
-    public Equipement findById(
+    public EquipementDTO findById(
             @Parameter(description = "Identifiant de l'équipement") @PathVariable Long id) {
-        return equipementService.findById(id);
+        return equipementMapper.toDTO(equipementService.findById(id));
     }
 
     @Operation(summary = "Modifier un équipement")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Équipement mis à jour"),
         @ApiResponse(responseCode = "404", description = "Équipement introuvable"),
-        @ApiResponse(responseCode = "400", description = "Données invalides (libellé vide)")
+        @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PutMapping("/{id}")
-    public Equipement update(
+    public EquipementDTO update(
             @Parameter(description = "Identifiant de l'équipement") @PathVariable Long id,
-            @RequestBody Equipement equipement) {
-        return equipementService.update(id, equipement);
+            @Valid @RequestBody EquipementDTO dto) {
+        return equipementMapper.toDTO(equipementService.update(id, equipementMapper.toEntity(dto)));
     }
 
     @Operation(summary = "Supprimer un équipement")

@@ -1,6 +1,5 @@
 package tn.esprit.autoloc.autolocapi.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -37,7 +36,6 @@ public class Contrat {
     // Référence vers la réservation — on expose uniquement les infos non-circulaires
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_reservation", unique = true)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "contrat"})
     private Reservation reservation;
 
     // Composition : les paiements sont créés via le contrat (cascade ALL)

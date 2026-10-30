@@ -47,7 +47,6 @@ public class VehiculeServiceImpl implements IVehiculeService {
         existant.setTarifJournalier(vehicule.getTarifJournalier());
         existant.setStatut(vehicule.getStatut());
         existant.setAgence(vehicule.getAgence());
-        existant.setEquipements(vehicule.getEquipements());
         return vehiculeRepository.save(existant);
     }
 

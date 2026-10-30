@@ -1,7 +1,6 @@
 package tn.esprit.autoloc.autolocapi.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -35,13 +34,11 @@ public class Reservation {
     // Client propriétaire — on expose le client mais on ignore sa liste de réservations
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_client")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "reservations"})
     private Client client;
 
     // Véhicule propriétaire — on expose le véhicule mais on ignore ses listes inverses
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_vehicule")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "reservations", "maintenances", "equipements"})
     private Vehicule vehicule;
 
     // Côté inverse du @OneToOne — on ignore pour éviter la boucle Reservation → Contrat → Reservation

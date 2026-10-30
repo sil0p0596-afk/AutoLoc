@@ -5,13 +5,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.autolocapi.domain.Reservation;
 import tn.esprit.autoloc.autolocapi.service.IReservationService;
+import tn.esprit.autoloc.autolocapi.web.dto.ReservationDTO;
+import tn.esprit.autoloc.autolocapi.web.mapper.ReservationMapper;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/reservations")
@@ -20,27 +23,26 @@ import java.util.List;
 public class ReservationController {
 
     private final IReservationService reservationService;
+    private final ReservationMapper reservationMapper;
 
-    @Operation(summary = "Créer une réservation",
-               description = "Corps attendu : { \"dateDebut\": \"2026-11-02\", \"dateFin\": \"2026-11-06\", " +
-                             "\"statut\": \"EN_ATTENTE\", \"client\": {\"idClient\": 1}, " +
-                             "\"vehicule\": {\"idVehicule\": 1} }. " +
-                             "Retourne 400 si dateFin est antérieure à dateDebut.")
+    @Operation(summary = "Créer une réservation")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Réservation créée avec succès"),
-        @ApiResponse(responseCode = "400", description = "Données invalides (date de fin antérieure ou champ manquant)")
+        @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Reservation create(@RequestBody Reservation reservation) {
-        return reservationService.create(reservation);
+    public ReservationDTO create(@Valid @RequestBody ReservationDTO dto) {
+        return reservationMapper.toDTO(reservationService.create(reservationMapper.toEntity(dto)));
     }
 
     @Operation(summary = "Lister toutes les réservations")
     @ApiResponse(responseCode = "200", description = "Liste des réservations retournée")
     @GetMapping
-    public List<Reservation> findAll() {
-        return reservationService.findAll();
+    public List<ReservationDTO> findAll() {
+        return reservationService.findAll().stream()
+                .map(reservationMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Operation(summary = "Consulter une réservation par son identifiant")
@@ -49,22 +51,22 @@ public class ReservationController {
         @ApiResponse(responseCode = "404", description = "Réservation introuvable")
     })
     @GetMapping("/{id}")
-    public Reservation findById(
+    public ReservationDTO findById(
             @Parameter(description = "Identifiant de la réservation") @PathVariable Long id) {
-        return reservationService.findById(id);
+        return reservationMapper.toDTO(reservationService.findById(id));
     }
 
     @Operation(summary = "Modifier une réservation")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Réservation mise à jour"),
         @ApiResponse(responseCode = "404", description = "Réservation introuvable"),
-        @ApiResponse(responseCode = "400", description = "Données invalides (date de fin antérieure)")
+        @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PutMapping("/{id}")
-    public Reservation update(
+    public ReservationDTO update(
             @Parameter(description = "Identifiant de la réservation") @PathVariable Long id,
-            @RequestBody Reservation reservation) {
-        return reservationService.update(id, reservation);
+            @Valid @RequestBody ReservationDTO dto) {
+        return reservationMapper.toDTO(reservationService.update(id, reservationMapper.toEntity(dto)));
     }
 
     @Operation(summary = "Supprimer une réservation")

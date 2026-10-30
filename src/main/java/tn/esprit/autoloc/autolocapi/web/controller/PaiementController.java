@@ -7,10 +7,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.autolocapi.domain.Paiement;
 import tn.esprit.autoloc.autolocapi.service.IPaiementService;
+import tn.esprit.autoloc.autolocapi.web.dto.PaiementDTO;
+import tn.esprit.autoloc.autolocapi.web.mapper.PaiementMapper;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/paiements")
@@ -19,13 +21,15 @@ import java.util.List;
 public class PaiementController {
 
     private final IPaiementService paiementService;
+    private final PaiementMapper paiementMapper;
 
-    @Operation(summary = "Lister tous les paiements",
-               description = "Les paiements sont créés en cascade depuis un contrat, ce contrôleur est en lecture seule.")
+    @Operation(summary = "Lister tous les paiements")
     @ApiResponse(responseCode = "200", description = "Liste des paiements retournée")
     @GetMapping
-    public List<Paiement> findAll() {
-        return paiementService.findAll();
+    public List<PaiementDTO> findAll() {
+        return paiementService.findAll().stream()
+                .map(paiementMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Operation(summary = "Consulter un paiement par son identifiant")
@@ -34,8 +38,8 @@ public class PaiementController {
         @ApiResponse(responseCode = "404", description = "Paiement introuvable")
     })
     @GetMapping("/{id}")
-    public Paiement findById(
+    public PaiementDTO findById(
             @Parameter(description = "Identifiant du paiement") @PathVariable Long id) {
-        return paiementService.findById(id);
+        return paiementMapper.toDTO(paiementService.findById(id));
     }
 }

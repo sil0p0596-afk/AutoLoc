@@ -5,13 +5,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.autolocapi.domain.Agence;
 import tn.esprit.autoloc.autolocapi.service.IAgenceService;
+import tn.esprit.autoloc.autolocapi.web.dto.AgenceDTO;
+import tn.esprit.autoloc.autolocapi.web.mapper.AgenceMapper;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/agences")
@@ -20,24 +23,26 @@ import java.util.List;
 public class AgenceController {
 
     private final IAgenceService agenceService;
+    private final AgenceMapper agenceMapper;
 
-    @Operation(summary = "Créer une agence",
-               description = "Crée une nouvelle agence. Retourne 400 si un attribut obligatoire est absent.")
+    @Operation(summary = "Créer une agence")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Agence créée avec succès"),
-        @ApiResponse(responseCode = "400", description = "Données invalides (attribut obligatoire manquant)")
+        @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Agence create(@RequestBody Agence agence) {
-        return agenceService.create(agence);
+    public AgenceDTO create(@Valid @RequestBody AgenceDTO dto) {
+        return agenceMapper.toDTO(agenceService.create(agenceMapper.toEntity(dto)));
     }
 
     @Operation(summary = "Lister toutes les agences")
     @ApiResponse(responseCode = "200", description = "Liste des agences retournée")
     @GetMapping
-    public List<Agence> findAll() {
-        return agenceService.findAll();
+    public List<AgenceDTO> findAll() {
+        return agenceService.findAll().stream()
+                .map(agenceMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Operation(summary = "Consulter une agence par son identifiant")
@@ -46,9 +51,9 @@ public class AgenceController {
         @ApiResponse(responseCode = "404", description = "Agence introuvable")
     })
     @GetMapping("/{id}")
-    public Agence findById(
+    public AgenceDTO findById(
             @Parameter(description = "Identifiant de l'agence") @PathVariable Long id) {
-        return agenceService.findById(id);
+        return agenceMapper.toDTO(agenceService.findById(id));
     }
 
     @Operation(summary = "Modifier une agence")
@@ -58,10 +63,10 @@ public class AgenceController {
         @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PutMapping("/{id}")
-    public Agence update(
+    public AgenceDTO update(
             @Parameter(description = "Identifiant de l'agence") @PathVariable Long id,
-            @RequestBody Agence agence) {
-        return agenceService.update(id, agence);
+            @Valid @RequestBody AgenceDTO dto) {
+        return agenceMapper.toDTO(agenceService.update(id, agenceMapper.toEntity(dto)));
     }
 
     @Operation(summary = "Supprimer une agence")

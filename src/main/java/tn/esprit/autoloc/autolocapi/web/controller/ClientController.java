@@ -5,13 +5,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.autolocapi.domain.Client;
 import tn.esprit.autoloc.autolocapi.service.IClientService;
+import tn.esprit.autoloc.autolocapi.web.dto.ClientDTO;
+import tn.esprit.autoloc.autolocapi.web.mapper.ClientMapper;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/clients")
@@ -20,24 +23,26 @@ import java.util.List;
 public class ClientController {
 
     private final IClientService clientService;
+    private final ClientMapper clientMapper;
 
-    @Operation(summary = "Créer un client",
-               description = "Crée un nouveau client. Retourne 400 si email, numPermis ou nom est vide.")
+    @Operation(summary = "Créer un client")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Client créé avec succès"),
-        @ApiResponse(responseCode = "400", description = "Données invalides (attribut d'identification manquant)")
+        @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Client create(@RequestBody Client client) {
-        return clientService.create(client);
+    public ClientDTO create(@Valid @RequestBody ClientDTO dto) {
+        return clientMapper.toDTO(clientService.create(clientMapper.toEntity(dto)));
     }
 
     @Operation(summary = "Lister tous les clients")
     @ApiResponse(responseCode = "200", description = "Liste des clients retournée")
     @GetMapping
-    public List<Client> findAll() {
-        return clientService.findAll();
+    public List<ClientDTO> findAll() {
+        return clientService.findAll().stream()
+                .map(clientMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Operation(summary = "Consulter un client par son identifiant")
@@ -46,9 +51,9 @@ public class ClientController {
         @ApiResponse(responseCode = "404", description = "Client introuvable")
     })
     @GetMapping("/{id}")
-    public Client findById(
+    public ClientDTO findById(
             @Parameter(description = "Identifiant du client") @PathVariable Long id) {
-        return clientService.findById(id);
+        return clientMapper.toDTO(clientService.findById(id));
     }
 
     @Operation(summary = "Modifier un client")
@@ -58,10 +63,10 @@ public class ClientController {
         @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PutMapping("/{id}")
-    public Client update(
+    public ClientDTO update(
             @Parameter(description = "Identifiant du client") @PathVariable Long id,
-            @RequestBody Client client) {
-        return clientService.update(id, client);
+            @Valid @RequestBody ClientDTO dto) {
+        return clientMapper.toDTO(clientService.update(id, clientMapper.toEntity(dto)));
     }
 
     @Operation(summary = "Supprimer un client")
